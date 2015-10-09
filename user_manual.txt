@@ -1,0 +1,358 @@
+!!BANG!!
+========
+A text processor and static website generator.
+Bang lets you shoot holes through text files!
+
+Language: Python, custom (Bang script)
+Templates: custom (Bang markup)
+Licence: MIT
+
+Bang comprises of an extremely minimalist markup language,
+and a quirky scripting language that can be extended with Python.
+The bang processor itself is a short Python script.
+It allows for variables in text files,
+as well as encouraging very modular text files.
+The markup language allows you to shoot holes in text files with a !!keyword!!
+and then fill the !!keyword!! with a word, line of text, text file, 
+or Python function return value. 
+Bang scripts define the values of keywords in text files, 
+and which files will be processed and in what order.
+Text files should be utf-8 encoded.
+
+--------------------------------------------------------------------------------
+
+Requirements
+------------
+ - Python 3.1+
+
+Installation
+------------
+Simply place the bang folder in the directory you wish to use for your project 
+and you're good to go. Easy!
+
+Project Folder structure:
+
+    .
+    ├── bang
+    |   ├── bang
+    |   |   ├── script_name_1.bang
+    :   |   ├── script_name_2.bang
+    :   |   └── global.bang
+    :   ├── LICENSE.txt
+    :   ├── README.markdown
+    :   └── bang.py
+    :
+    Project files and folders 
+    (No enforced structure)
+
+Encoding
+--------
+All files processed by Bang should be utf-8 encoded.
+They may have any (or no) extension though:
+ - .txt
+ - .css 
+ - .html 
+ - .py
+
+--------------------------------------------------------------------------------
+Quickstart
+----------
+The simplest way to process text with Bang is as follows:
+
+1. Place bang folder in the desired project directory as described in installation.
+
+2. Create text files of desired utf-8 encoded file format anywhere in the project.
+
+3. Replace sections of text files with bang keywords
+Keywords are enclosed in double bangs or exclamation marks (!!)
+
+    !!keyword!!
+
+This allows us to replace text with variables.
+For example, ./css/style.css:
+
+    body
+    {
+      background-color: !!bg_colour!!;
+		  colour: !!color!!;
+		  font-family: !!font!!;
+    }
+
+
+It also allows for text files to be very modular.
+For example, ./html/index.html:
+
+    !!head!!
+    !!body!!
+
+4. Define the value of keywords in a bang script, 
+and specify what and how text files need to be processed.
+The Bang scripting language is described in detail in the [user manual](./user_manual.txt).
+
+The easiest way to use bang is to use a single global bang script with global variables.
+This file path of this script should be the following:
+
+    <project_path>/bang/bang/global.bang
+
+The scripting language has five operators, all of which consist of bangs.
+Three of these assign a value to a keyword, and two are for file processing.
+
+Assignment Operators:
+!    - for assigning a word or line of text to a !!keyword!!
+!!   - for assigning file of text to a !!keyword!!
+!!!  - for assigning the return value of a python script to a !!keyword!!
+
+File processing operators:
+!!!! - for processing markup files, looking for and replacing !!keywords!!
+!!!!! - for wrapping text from a file around an existing file.
+
+Here is the full list of legal bang statements:
+
+    !keyword string
+    !!keyword file
+    !!!keyword script arguments
+    !!!! source/file.ext destination/file.ext
+    !!!! source/*.ext destination/*.ext
+    !!!! source/*.ext destination/name.ext preview.ext
+    !!!! source/*.ext destination/name.ext preview.ext num
+    !!!!! wrapper.ext target.ext
+    !!!!! wrapper.ext target_directory/*.ext
+    This is a comment
+
+Here is an example global bang script:
+
+./bang/bang/global.bang:
+
+    Lines that don't begin with ! are a comment.
+    
+    Assign values to keyword identifiers 
+    (single bang for keyword = text)
+    !bg-color rgb(0,0,0)
+    !color rgb(255,255,255)
+    !font serif
+    
+    Assign text from file to keyword identifiers
+    (double bang for keyword = text from file)
+    !!head html/head.html
+    !!body html/body.html
+    
+    If ./html/body.html also contained bang keywords, they could also be defined.
+    (single bang for keyword = text)
+    !body-heading
+    !body-text 
+    
+    Process file with the defined keywords and save result in new location.
+    (quadruple bang for processing text with the defined keywords)
+    !!!! css/style.css site/style.css
+    !!!! html/index.html site/index.html
+
+For a full explaination of the Bang scripting language read the [user manual](./user_manual.txt).
+
+    
+Markup Language
+---------------
+Bang's markup language is really simple.
+Keywords are placed in text files,
+and are later replaced by a value when the files are processed by bang.
+Keywords are enclosed by double bangs (exclamation marks)
+and then assigned a value later.
+
+    !!keyword!!
+
+All instances of a keyword in the file will be replaced by an assigned value
+when the file is processed by a Bang script.
+
+The value of a keyword can be a word, line of text, text file
+or python function return value. 
+
+
+###Markup examples:
+
+style.css:
+
+    body
+    {
+		  background-color: !!bg_colour!!;
+		  colour: !!color!!;
+		  font-family: !!font!!;
+    }
+
+html_template.html:
+      
+    <!DOCTYPE html>
+    <html lang="en">
+    !!head!!
+    !!body!!
+    </html>
+
+body.html:
+
+    !!header!!
+    !!nav!!
+    !!main!!
+    !!footer!!
+
+--------------------------------------------------------------------------------
+
+Scripting Language
+------------------
+Bang scripts allows us to assign values to keywords,
+and process specific files in a specific order.
+Bang scripts must be located in the ./bang/bang folder,
+be utf-8 encoded and must have the extension ".bang".
+
+
+All file paths are relative to the project directory (the parent folder of the bang folder).
+
+###Operators
+The scripting language has five operators, all of which consist of bangs.
+Three of these assign a value to a keyword, and two are for file processing.
+
+Assignment Operators:
+!    - for assigning a word or line of text to a !!keyword!!
+!!   - for assigning file of text to a !!keyword!!
+!!!  - for assigning the return value of a python script to a !!keyword!!
+
+File processing operators:
+!!!! - for processing markup files, looking for and replacing !!keywords!!
+!!!!! - for wrapping text from a file around an existing file.
+
+###Syntax
+A bang scripting language statement begins with an operator and is terminated by a newline.
+All lines that do not begin with a bang are considered comments and are not interpreted.
+All file paths are relative to the project directory (the parent folder of the bang folder).
+
+
+### Assignment Statements
+
+Assign text to a keyword. This may be a word or line of text.
+
+    !keyword string
+    
+Assign all text from a file to a keyword.
+
+    !!keyword file
+    
+Run a python script. This script must contain a main(*args) function.
+The return value of this function is then assigned to a keyword.
+
+    !!!keyword script arguments
+
+### Processing Statements
+    
+Process a single file.
+
+    !!!! source/file.ext destination/file.ext
+
+Process Multiple files.
+All files in the source directory of the specified extension 
+will be processed and saved in the destination directory.
+ 
+    !!!! source/*.ext destination/*.ext
+
+### Generating file previews.
+Previews of files can be generated.
+The optional argument num defines the maximum number of previews, and will generate several files.
+
+    !!!! source/*.ext destination/name.ext preview.ext
+
+    !!!! source/*.ext destination/name.ext preview.ext num
+
+This is useful for viewing segments of several text files in a single file.
+It can also be used to generate a directory file that previews and links to other files. 
+
+In order to generate preview file(s), a special preview template markup file must be defined.
+The preview template determines how each file in the source directory will be previewed.
+This preview file can contain special line preview keywords.
+Line preview keywords are defined as:
+
+    !!n!!
+
+where n is the line number that will be inserted into each preview.
+
+The preview markup file can link to the basename (filename and extension) of each file with the link keyword:
+
+    !!#!!
+
+### Wrap statements
+Wrap the target file with the wrapper file.
+
+    !!!!! wrapper.ext target.ext
+
+Wrap multiple  target files with a wrapper file. 
+
+    !!!!! wrapper.ext target_directory/*.ext
+
+The wrapper markup file must  contain the special wrap keyword:
+    
+    !!!!! 
+
+### Bang script examples
+
+style.bang:
+
+    Assign values to keyword identifiers.
+    
+    !bg-color rgb(0,0,0)
+    !color rgb(255,255,255)
+    !font myfont
+    
+    Process file and save result in new location.
+    !!!! css/style.css site/style.css
+  
+  homepage.bang:
+
+    Define webpage variables
+    !site_name My website
+    !page_name !!site_name!!
+    !title Generated by Bang
+    
+    Get text from a file
+    !!text text/hello.txt
+    
+    Assign the return value of a python script
+    main(*args) function to a keyword.
+    !!!generated_text  scripts/python/myscript.py hello
+
+    Process markup file and save output to new file.    
+    !!!! html/template.html site/index.html
+    Wrap the new file with another file.
+    !!!!! html/html_docstring.html site/index.html
+
+###Order of execution
+Bang scripts are executed in order of file name (0-9 A-Z a-z ).
+Bang scripts are interpreted from top to bottom.
+
+###Global Variables and scope
+Global variables are defined in  ./bang/bang/global.bang
+The can be used when variables need to remain constant over the project.
+Global variables can be redefined in the local scope of a bang script
+ but will retain their original value for other bang scripts.
+ 
+### Processing multiple files
+When processing multiple files it may be useful to link to the next or previous file.
+If the special navigation keywords are defined in a bang script prior to processing a file,
+their values will be inserted at the end of a file when multiple files are being processed.  
+
+    !!< back_markup_template
+    !!> next_markup_template
+
+These templates will then also be processed by Bang and 
+may contain links to the previous and next file with the following markup keywords 
+(back and next respectively):
+
+    !!#<!!
+    !!#>!!
+
+--------------------------------------------------------------------------------    
+
+Syntax highlighting
+-------------------------
+If you use notepad++ you can use the .udl language files included with Bang.
+There is one file for Bang markup and one for Bang scripts.
+In notepad++ for both markup: 
+
+     language > 
+     define your language > 
+     import > 
+     select .udl file.

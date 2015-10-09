@@ -42,7 +42,7 @@ Relative to your project directory bang.py should be located at:
     ./Bang/bang.py
 
 3) To learn how to use Bang, you should read the quickstart guide below 
-and the [user manual](./user_manual.txt).
+and the [user manual](./user_manual.markdown).
 
 --------------------------------------------------------------------------------
 
@@ -171,6 +171,6 @@ Here is an example global Bang script:
 
 --------------------------------------------------------------------------------
 
-For a full explaination of the Bang scripting language read the [user manual](./user_manual.txt).
+For a full explaination of the Bang scripting language read the [user manual](./user_manual.markdown).
 This includes information about processing multiple files, 
 variables scope, order of execution, document links and text wrappers.

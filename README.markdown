@@ -23,7 +23,7 @@ Bang scripts define the values of keywords, which files will be processed
 and the order they will be processed in.
 Text files should be utf-8 encoded.
 
-![Bang logo]("logo.png" "Bang logo")
+![Bang logo](extra/logo.png "Bang logo")
 
 --------------------------------------------------------------------------------
 

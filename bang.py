@@ -500,7 +500,7 @@ def run_bang(filename, global_variables=None):
   return variables
   
 #-------------------------------------------------------------------------------
-# Run !!BangBang!!
+# Run !!Bang!!
 #-------------------------------------------------------------------------------
 def main():
   """ Runs all bang scripts. """
@@ -508,7 +508,8 @@ def main():
   bang_scripts = find_bang_scripts()
 
   # If a global bang script exists, run it and return global variables.
-  global_bang = os.path.join(project_path(), "Bang", "scripts", "global.bang")
+  global_bang = os.path.join(path(), "scripts", "global.bang")
+  global_variables = set()
   if os.path.isfile(global_bang):
       print("\nProcessing global bang script.\n")
       global_variables = run_bang(global_bang)

@@ -1,0 +1,25 @@
+!keyword string
+!!keyword file
+!!!keyword script arguments
+!!!! source/file.ext destination/file.ext
+!!!! source/*.ext destination/*.ext
+!!!! source/file.ext destination/file.ext format.txt
+!!!! source/*.ext destination/*.ext format.txt
+!!!! source/*.ext destination/name.ext preview.ext
+!!!! source/*.ext destination/name.ext preview.ext num
+!!!!! wrapper.ext target.ext
+!!!!! wrapper.ext target_directory/*.ext
+This is a comment
+
+!!#!! filename
+!!##!! filename without extension
+
+!!!!/ reverse
+
+!!!! source/file.ext destination/file.ext format.txt
+!!!! source/*.ext destination/*.ext format.txt
+
+!!.!! newline
+!!@!! project path
+
+!!<>!! wrap navigation when multiple files or generating previews

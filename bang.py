@@ -34,7 +34,7 @@ Text files should be utf-8 encoded.
 import os
 import sys
 # Sleep when the program is used in recursive mode.
-from time import sleep
+from time import sleep, time
 # Needed to run python scripts dynamically.
 import importlib
 
@@ -90,7 +90,11 @@ def project_path():
 
 def bang_scripts_path():
   """ Returns the directory of bang's scripts """
-  return os.path.join(path(), "scripts")
+  try:
+    with open(os.path.join(path(), "config.txt"), encoding="utf-8", mode="r") as config:
+      return os.path.realpath(os.path.join(path(),config.read()))
+  except FileNotFoundError:
+      return os.path.join(path(), "scripts")
 
 def find_bang_scripts():
   """ 
@@ -118,10 +122,10 @@ def create_directory(path):
 #-------------------------------------------------------------------------------
 # Python extension
 #-------------------------------------------------------------------------------
-def run_python(script, *args):
+def run_python(script, *args, **variables):
   """
   Run a python script by module name and return its value.
-  The module must contain a main(*args) function.
+  The module must contain a main(*args, **kwargs) function.
     
   Args:
     script (str): The script to run. 
@@ -130,19 +134,21 @@ def run_python(script, *args):
     The return value of script main(*args) function.
   """
   print("running: ", script)
-  directory = path(script)
+  directory = path(os.path.join(project_path(), script))
   if directory not in sys.path:
     sys.path.append(directory)
   module = file_from_path(script, extension=False)
+  print("p: ", directory, "\n", module, "\n")
+  os.listdir(directory)
   module = importlib.import_module(module)
-  value = module.main(*args)
+  value = module.main(*args, **variables)
   sys.path.remove(directory)
   return  value
 
 #-------------------------------------------------------------------------------
 # Process markup files
 #-------------------------------------------------------------------------------
-def find_markup(source, destination, file_or_extension, new_name=None):
+def find_markup(source, destination, file_or_extension, new_name=None, new_extension=None):
   """ 
   Finds markup files to process
   
@@ -159,8 +165,12 @@ def find_markup(source, destination, file_or_extension, new_name=None):
   if file_or_extension[0] == ".":
     # Find multiple files to process, these will be moved but not rename.
     files = [file for file in os.listdir(source) if file.endswith(file_or_extension)]
+    files = sorted(files)
     input_files = [os.path.join(source, file) for file in files]
-    output_files = [os.path.join(destination, file) for file in files]
+    if new_extension:
+      output_files = [os.path.join(destination, os.path.splitext(file)[0] + new_extension) for file in files]
+    else:  
+      output_files = [os.path.join(destination, file) for file in files]
   else:
     # Find the file to process and rename if needed.
     input_files = [os.path.join(source, file_or_extension)]
@@ -229,14 +239,14 @@ def evaluate_markup(input_file, output_file, variables):
     variables (dict): A dictionary of variables (identifier: value).
     new_name (str): If a single file is being processed, it may be renamed.
   """
-  with open(input_file, encoding='utf-8', mode="r") as i_file:
-    with open(output_file, encoding='utf-8', mode="w") as o_file:
-      input_text = i_file.read()
-      output_text = evaluate_string(input_text, variables)
-      o_file.write(output_text)
-      print("Saved:", output_file)
+  with open(input_file, encoding='utf-8', mode="r") as file:
+    input_text = file.read()
+    output_text = evaluate_string(input_text, variables)
+  with open(output_file, encoding='utf-8', mode="w") as file:
+    file.write(output_text)
+    print("Saved:", output_file)
 
-def process_markup(source, destination, file_or_extension, variables, new_name=None):
+def process_markup(source, destination, file_or_extension, variables, new_name=None, reverse=False, format=None, new_extension=None):
   """
   Process bang markup file(s).
   
@@ -246,15 +256,21 @@ def process_markup(source, destination, file_or_extension, variables, new_name=N
     file_or_extension (str): The markup file(s) to process.
     variables (dict): A dictionary of variables (identifier: value).
     new_name (str): If a single file is being processed, it may be renamed. 
+    reverse (bool): Reverse the file process order.
+    format (str): The markup file that defines how to format the output.
   """
   # Find the markup file(s) we need to process.
-  input_files, output_files = find_markup(source, destination, file_or_extension, new_name)
+  input_files, output_files = find_markup(source, destination, file_or_extension, new_name, new_extension)
+  
+  variables = variables.copy()
+  
+  if reverse:
+    output_files = output_files[::-1]
   # Create a destination directory if it doesn't already exist.
   create_directory(destination)
   
   # Add navigation links if they have been defined
-  if (("<" in variables or ">" in variables) and 
-     (variables["<"] != None or variables[">"] != None)):
+  if "<>" in variables and variables["<>"] != "":
     navigation = True
     back = "\n" + variables["<"]
     next = "\n" + variables[">"]
@@ -264,10 +280,17 @@ def process_markup(source, destination, file_or_extension, variables, new_name=N
   # Search for keywords in markup file(s) and replace them with thier assigned value.
   files = zip(range(0, len(input_files)), input_files, output_files)
   for i, input_file, output_file in files:
-    evaluate_markup(input_file, output_file, variables)
+    variables["#"] = file_from_path(output_file)
+    variables["##"] = file_from_path(output_file, extension=False)
+    if format:
+      snippet(input_file, output_file, format, variables)
+    else:
+      evaluate_markup(input_file, output_file, variables)
     
     # If navigation keywords are defined add links.
     if navigation:
+      navigation_links = variables["<>"]
+      
       if i != 0:
         name = file_from_path(output_files[i - 1], extension=False)
         ext = extension_from_path(output_files[i - 1])
@@ -283,11 +306,37 @@ def process_markup(source, destination, file_or_extension, variables, new_name=N
       else:
         variables[">"] = ""
 
-      with open(output_file, encoding="utf-8", mode="a+") as file:
-        text = evaluate_string(file.read()+variables["<"]+variables[">"], variables)
+      with open(output_file, encoding="utf-8", mode="r") as file:
+        text = evaluate_string(navigation_links, variables).replace("!!!!!", file.read())
+      with open(output_file, encoding="utf-8", mode="w") as file:
         file.write(text)
-    
-def generate_preview(source, destination, extension, preview, variables, name, num=None):
+
+def snippet(input_file, output_file, format_file, variables):
+  """
+  Evaluates bang markup file(s), and saves a formatted output.
+  
+  input_file (str): The file to generate the snippet from.
+  output_file (str): The file to save to.
+  format_file (str): The markup file that defines how to generate the snippet.
+  variables (dict): A dictionary of variables (identifier: value).
+  """
+  variables = variables.copy()
+  with open(input_file, encoding="utf-8", mode="r") as input:
+    try:
+      text = input.read().splitlines()
+    except UnicodeDecodeError:
+      print("Input file is not utf-8 encoded!")
+  with open(format_file, encoding="utf-8", mode="r") as format:
+    format = format.read()
+  for i in range(1,10001):
+    keyword = "!!" + str(i) + "!!"
+    if keyword in format:
+      variables[str(i)] = text[i - 1]
+  text = evaluate_string(format, variables)
+  with open(output_file, encoding="utf-8", mode="w") as output:
+    output.write(text)
+
+def generate_preview(source, destination, extension, preview, variables, name, num=None, reverse=False):
   """
   Generate a preview file based on snippets of several text files.
   
@@ -302,6 +351,12 @@ def generate_preview(source, destination, extension, preview, variables, name, n
     """
   # get files
   files = [file for file in os.listdir(source) if file.endswith(extension)]
+  files = sorted(files)
+  
+  variables = variables.copy()
+  
+  if reverse:
+    files = files[::-1]
   input_files = [os.path.join(source, file) for file in files]
   output_file = os.path.join(destination, name)
   create_directory(destination)
@@ -318,17 +373,24 @@ def generate_preview(source, destination, extension, preview, variables, name, n
   output_text = ""
   for input_file in input_files:
     with open(input_file, encoding="utf-8", mode="r") as input_text:
-      variables["#"] = file_from_path(input_file) 
-      input_text = input_text.read().splitlines()
-      for line in lines:
-        keyword = "!!" + str(line) + "!!"
-        variables[str(line)] = input_text[line - 1]
+      variables["#"] = file_from_path(input_file)
+      variables["##"] = file_from_path(input_file, extension=False)
+      try:      
+        input_text = input_text.read().splitlines()
+      except UnicodeDecodeError:
+        print("Input file is not utf-8 encoded!")
+        input_text = "" 
+      else:
+        for line in lines:
+          keyword = "!!" + str(line) + "!!"
+          variables[str(line)] = input_text[line - 1]
     output_text += evaluate_string(preview_text, variables)
   
   if num == None:
     output_file = os.path.join(destination, name)
     with open(output_file, encoding="utf-8", mode="w") as file:
-      file.write(output_text)
+      file.write("\n" + output_text)
+      print("Generated: ", output_file)
 
   # If num is defined, seperate pages and add links if they are defined.
   else:
@@ -337,33 +399,47 @@ def generate_preview(source, destination, extension, preview, variables, name, n
     page = 1
     posts = len(input_files)
     max_pages = posts // num + (posts % num > 0)
+    remainder = posts % num
     for input_file in input_files:
       with open(input_file, encoding="utf-8", mode="r") as input_text:
-        input_text = input_text.read().splitlines()
-        for line in lines:
-          keyword = "!!" + str(line) + "!!"
-          variables[str(line)] = input_text[line - 1]
-      output_text += evaluate_string(preview_text, variables)
-      post += 1
-      if post > num:
-        suffix = "_" + str(page)
-        preview_name = file_from_path(output_file, extension=False)
-        preview_extension = extension_from_path(output_file)
-        preview_file = preview_name + suffix + preview_extension
-        preview_filepath = os.path.join(destination,  preview_file)
-        if "<" in variables and page != 1:
-          variables["#<"] = preview_name + "_" + str(page - 1) + preview_extension
-          output_text += "\n" + evaluate_string(variables["<"], variables)
-        if ">" in variables and page != max_pages:
-          variables["#>"] = preview_name + "_" + str(page + 1) + preview_extension
-          output_text += "\n" + evaluate_string(variables[">"], variables)
-        file = open(preview_filepath, encoding="utf-8", mode="w")
-        file.write(output_text)
-        file.close()
-        print("Generated: ", preview_file)
-        output_text = ""
-        post = 1
-        page += 1
+        try:      
+          input_text = input_text.read().splitlines()
+        except UnicodeDecodeError:
+          input_text = ""
+        finally:
+          variables["#"] = file_from_path(input_file)
+          variables["##"] = file_from_path(input_file, extension=False)
+          for line in lines:
+            keyword = "!!" + str(line) + "!!"
+            variables[str(line)] = input_text[line - 1]
+        output_text += evaluate_string(preview_text, variables)
+        post += 1
+        if post > num or (page == max_pages and post > remainder and remainder != 0):
+          suffix = "_" + str(page)
+          preview_name = file_from_path(output_file, extension=False)
+          preview_extension = extension_from_path(output_file)
+          preview_file = preview_name + suffix + preview_extension
+          preview_filepath = os.path.join(destination,  preview_file)
+          
+          if "<>" in variables and variables["<>"] != "":
+            navigation_links = variables["<>"]
+            if page != 1:
+              variables["#<"] = preview_name + "_" + str(page - 1) + preview_extension
+            else:
+              navigation_links = navigation_links.replace("!!<!!", "")
+            if page != max_pages:
+              variables["#>"] = preview_name + "_" + str(page + 1) + preview_extension
+            else:
+              navigation_links = navigation_links.replace("!!>!!", "")         
+            output_text = evaluate_string(navigation_links, variables).replace("!!!!!", output_text)
+            
+          file = open(preview_filepath, encoding="utf-8", mode="w")
+          file.write(output_text)
+          file.close()
+          print("Generated: ", preview_file)
+          output_text = ""
+          post = 1
+          page += 1
 
 def wrap_file(wrapper_file, target_file, variables):
   """
@@ -393,6 +469,7 @@ def wrap_file(wrapper_file, target_file, variables):
       print("Please ensure wrapper files contain the wrap keyword: !!!!!") 
     else: 
       target = open(target_file, encoding="utf-8", mode="w")
+      text = evaluate_string(text, variables)
       target.write(text)
       target.close()
       print("wrapped: ", target_file)
@@ -441,23 +518,41 @@ def interpret_bang(line, variables):
     destination = os.path.join(project_path(), arguments[1])
     destination_directory = path(destination)
     destination_file = file_from_path(destination)
-
+   
+    reverse = False
+    if line[4] == "/":
+      reverse = True
+    
     # Process file(s).
     if file_from_path(source_file, extension=False) == "*":
       source_files = source_file[1:]
       extension = source_files
       if file_from_path(destination_file, extension=False) == "*":
         # multiple source and destination files.
-        process_markup(source_directory, destination_directory, source_files, variables)
+        new_extension = extension_from_path(destination_file)
+        if len(arguments) == 3:
+          format = os.path.join(project_path(), arguments[2])
+          process_markup(source_directory, destination_directory, source_files, variables, reverse=reverse, format=format, new_extension=new_extension)
+        else:
+          process_markup(source_directory, destination_directory, source_files, variables, reverse=reverse, new_extension=new_extension)
       else:
         # multiple source files single destination file
         preview = os.path.join(project_path(),arguments[2])
         name = os.path.basename(destination_file)
-        print(preview)
-        generate_preview(source_directory, destination_directory, extension, preview, variables, name, 1)
+        try:
+          num = arguments[3]
+        except IndexError:
+          generate_preview(source_directory, destination_directory, extension, preview, variables, name, reverse=reverse)
+        else:
+          num = int(num)
+          generate_preview(source_directory, destination_directory, extension, preview, variables, name, num, reverse=reverse)
     else:
       # single source and destination file
-      process_markup(source_directory, destination_directory, source_file, variables, new_name=destination_file)
+      if len(arguments) == 3:
+        format = os.path.join(project_path(), arguments[2])
+        process_markup(source_directory, destination_directory, source_file, variables, new_name=destination_file, format=format)
+      else:
+        process_markup(source_directory, destination_directory, source_file, variables, new_name=destination_file)
     # Delete the wrapper keyword if it exists.
     return None, None
 
@@ -466,7 +561,11 @@ def interpret_bang(line, variables):
     script_name = arguments.split()[0]
     if len(arguments) > 1:
       script_arguments = [arg for arg in arguments.split()[1:]]
-    return identifier, run_python(script_name, *script_arguments)
+    try:
+      del variables[None]
+    except KeyError:
+      pass
+    return identifier, run_python(script_name, *script_arguments, **variables)
 
   elif operator == "!!":
     # Read a text file.
@@ -488,6 +587,8 @@ def run_bang(filename, global_variables=None):
     The variables defined in the bang script 
   """
   variables = dict()
+  variables["@"] = project_path()
+  variables["."] =  "\n" 
   if global_variables:
     variables.update(global_variables)
   with open(filename, encoding='utf-8', mode="r") as file:
@@ -503,12 +604,18 @@ def run_bang(filename, global_variables=None):
 # Run !!Bang!!
 #-------------------------------------------------------------------------------
 def main():
+  
+  runtime = time()
+  
   """ Runs all bang scripts. """
   # Search for all bang scripts in alphameric order.
   bang_scripts = find_bang_scripts()
 
   # If a global bang script exists, run it and return global variables.
-  global_bang = os.path.join(path(), "scripts", "global.bang")
+  for script in bang_scripts:
+    if os.path.basename(script) == "global.bang":
+      global_bang = script
+
   global_variables = set()
   if os.path.isfile(global_bang):
       print("\nProcessing global bang script.\n")
@@ -523,17 +630,38 @@ def main():
     variables = global_variables.copy()
     run_bang(script, variables)
   
-  # All bang scripts have been processed.   
-  print("\nBang! Bang! All files have been processed.\n")
+  runtime = round(time() - runtime, 1)
   
+  # All bang scripts have been processed.   
+  print("\nBang! Bang! All files have been processed. ({}s)".format(runtime))
+
 if __name__ == "__main__":
   """ Main program entry point. Runs all bang scripts. """
-  # If -r has been specified as command line argument, update continuously
-  if len(sys.argv) == 2 and sys.argv[1] == "-r":
+
+  # Override print unless -v has been has been specified as command line argument (verbose.
+  python_print = print
+  if not "-v" in sys.argv:
+    # Store the standard print function.
+    def print(*args):
+      """ Override print function for quiet mode. """
+      output = "".join([str(arg) for arg in args]).replace("\n", "")
+      line_length = 80
+      if len(output) > line_length:
+        output = output[:line_length-3] + "..."
+      output = output + " " * (line_length - len(output))
+      python_print(output, end="\r")
+
+
+  # If -s has been specified as command line argument, run silently.
+  if "-s" in sys.argv:
+    def print(*args):
+      return
+
+  # If -r has been specified as command line argument, run repeatedly.
+  if "-r" in sys.argv:
     while True:
       main()
       sleep(10)
-  # If the script is run normally, process bang files once. 
-  else:
-    main()
-    input("\nPress enter to finish.\n")
+
+  main()
+  python_print()

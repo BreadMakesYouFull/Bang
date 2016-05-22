@@ -612,6 +612,7 @@ def main():
   bang_scripts = find_bang_scripts()
 
   # If a global bang script exists, run it and return global variables.
+  global_bang=""
   for script in bang_scripts:
     if os.path.basename(script) == "global.bang":
       global_bang = script

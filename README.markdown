@@ -107,7 +107,7 @@ It also allows for text files to be very modular. For example,
 
 4) Define the value of keywords in a Bang script, 
 and specify what and when text files need to be processed.
-For a more detailed description read the [user manual](./user_manual.txt).
+For a more detailed description read the [user manual](./user_manual.markdown).
 
 The easiest way to use Bang is to use a single global Bang script with global variables.
 

@@ -10,7 +10,7 @@ body {
   margin: 0;
   border: 0;
   display: flex;
-  font-size: x-large;
+  font-size: 2.5rem;
 }
 
 * .bg {
@@ -21,6 +21,7 @@ body {
     padding: 0;
     width: 100vw;
     height: 100vh;
+    display: table;
 }
 
 * {

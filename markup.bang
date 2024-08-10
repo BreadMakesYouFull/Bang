@@ -13,7 +13,7 @@ Assign the value of a command to a keyword:
 
 ---
 
-!!!datetime date
+!!!datetime date -I
 
 
 !!html_start ./in/html_start.html
@@ -21,7 +21,7 @@ Assign the value of a command to a keyword:
 !!body ./in/body.html
 !!html_end ./in/html_end.html
 
-!!!README head -15 ./README.md
+!!!README head -12 ./README.md | grep -v Preview
 !!links ./in/links.html
 
 !stylesheet ./style.css

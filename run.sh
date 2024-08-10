@@ -17,5 +17,8 @@ find "in" \
 
 cp "in/"*.{png,jpg,gif,jpeg} out/ 2>/dev/null
 
+cp out/index.html .
+sed -i index.html 's/style.css/out\/style.css/'
+
 URL="file://`pwd`/out/index.html"; xdg-open $URL || sensible-browser $URL || x-www-browser $URL || gnome-open $URL
 

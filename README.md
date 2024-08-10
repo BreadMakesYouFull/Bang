@@ -4,7 +4,7 @@ A text processor / static website generator.
 
 💥 Put holes through text files 💥
 
-[Preview](http://breadmakesyoufull.github.io/Bang/)
+[Preview](https://breadmakesyoufull.github.io/Bang/)
 
 Bang comprises of a minimal markup language,
 and a short python script.

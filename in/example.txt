@@ -1,0 +1,10 @@
+# in/example.txt
+
+Text replacement by keyword: 
+!!from_string!!
+
+Text replacement by file: 
+!!from_file!!
+
+Text replacement by command: 
+!!from_command!!

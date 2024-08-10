@@ -1,0 +1,33 @@
+# markup.bang
+
+Lines that do not start with ! are comments.
+
+Assign a value to a keyword:
+!from_string this is a string value
+
+Assign the value of a file to a keyword:
+!!variable_from_file ./in/from_file.txt
+
+Assign the value of a command to a keyword:
+!!!variable_from_command date -I
+
+---
+
+!!!datetime date
+
+
+!!html_start ./in/html_start.html
+!!head ./in/head.html
+!!body ./in/body.html
+!!html_end ./in/html_end.html
+
+!!!README head -15 ./README.md
+!!links ./in/links.html
+
+!stylesheet ./style.css
+
+!color #ffffff
+!bg_color #283f61
+!bg_image ./bg.jpg
+!bg_overlay_color #000000d1
+!font monospace

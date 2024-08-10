@@ -1,0 +1,2 @@
+"""bang - Static website generator.
+"""

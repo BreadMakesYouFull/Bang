@@ -1,0 +1,30 @@
+/* style.css */
+
+body {
+  background-color: #283f61;
+  background-image: url("./bg.jpg");
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  display: flex;
+  font-size: x-large;
+}
+
+* .bg {
+    background-color: #000000d1;
+    margin: 0;
+    border: 0;
+    border-top: none;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+}
+
+* {
+  color: #ffffff;
+  font-family: monospace;
+}
+
